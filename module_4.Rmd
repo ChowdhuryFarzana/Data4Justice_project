@@ -1,0 +1,212 @@
+---
+title: "NYC Construction Data Cleaning & Validation"
+output: html_document
+author: "Farzana Chowdhury"
+date: "2025-07-07"
+---
+
+```{r load-libraries, message=FALSE, warning=FALSE}
+## Load Required Libraries
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)
+library(janitor)
+
+```
+
+---
+
+## 🌐 Load Dataset from NYC Open Data
+
+```{r load-data}
+url <- "https://data.cityofnewyork.us/resource/8586-3zfm.json"
+nyc_construction <- fromJSON(url)
+nyc_construction <- as.data.frame(nyc_construction)
+
+# View structure
+str(nyc_construction)
+
+```
+
+
+```{r}
+# View structure and types
+str(nyc_construction)
+
+# Compact structure view
+glimpse(nyc_construction)
+
+```
+
+```{r}
+# Check dimensions
+dim(nyc_construction)   # rows and columns
+
+# Number of rows and columns separately
+nrow(nyc_construction)
+ncol(nyc_construction)
+
+# View the first few rows
+head(nyc_construction)
+
+# View column names
+colnames(nyc_construction)
+
+```
+```{r}
+# Summary of each column
+summary(nyc_construction)
+
+# Check for missing data in each column
+colSums(is.na(nyc_construction))
+
+```
+```{r}
+# Plot job counts by borough if 'borough' column exists
+if ("borough" %in% colnames(nyc_construction)) {
+  ggplot(nyc_construction, aes(x = borough)) +
+    geom_bar() +
+    theme_minimal() +
+    labs(
+      title = "Construction Job Counts by Borough",
+      x = "Borough",
+      y = "Count"
+    )
+}
+
+```
+
+
+```{r fix-data-types}
+#  Convert numerical and date columns properly
+# Step 1: Fix Data Types
+nyc_construction <- nyc_construction %>%
+  mutate(
+    award = as.numeric(award),
+    latitude = as.numeric(latitude),
+    longitude = as.numeric(longitude)
+  )
+```
+
+
+```{r}
+# Step 2: Remove Duplicates
+nyc_construction <- nyc_construction %>%
+  distinct()
+
+# Step 3: Clean Messy Text (excluding 'projdesc')
+char_cols <- names(nyc_construction)[sapply(nyc_construction, is.character)]
+cols_to_clean <- setdiff(char_cols, "projdesc")
+
+nyc_construction <- nyc_construction %>%
+  mutate(across(
+    all_of(cols_to_clean),
+    str_trim
+  )) %>%
+  mutate(across(
+    c(city, borough),
+    str_to_title
+  ))
+
+
+```
+
+```{r}
+# View column names after cleaning
+nyc_construction_cleaned <- nyc_construction %>%
+  clean_names()
+
+colnames(nyc_construction_cleaned)
+
+```
+
+
+```{r}
+# Step 4: Rename Confusing Variable Names
+nyc_construction <- nyc_construction %>%
+  rename(
+    borough_code = boro,
+    geographic_district = geo_dist,
+    project_description = projdesc,
+    construction_type = consttype,
+    building_id = buildingid,
+    building_identification_number = bin,
+    borough_block_lot = bbl,
+    neighborhood_tabulation_area = nta,
+    coordinates = location_1,
+    planning_area_region = region1,
+    school_district_region = region2,
+    community_region_yeji = computed_region_yeji_bk3q,
+    community_region_92fq = computed_region_92fq_4b7q,
+    community_region_sbqj = computed_region_sbqj_enih
+  )
+
+```
+
+
+```{r}
+# Step 5: Handle Missing Data
+# View how much is missing
+colSums(is.na(nyc_construction))
+
+# Replace missing ZIPs and boroughs with "Unknown"
+nyc_construction <- nyc_construction %>%
+  mutate(
+    zip_code = ifelse(is.na(zip_code), "Unknown", zip_code),
+    borough = ifelse(is.na(borough), "Unknown", borough)
+  )
+
+
+```
+
+
+```{r}
+
+# Drop rows with missing critical IDs (BIN, BBL)
+nyc_construction <- nyc_construction %>%
+  filter(
+    !is.na(building_identification_number),
+    !is.na(borough_block_lot)
+  )
+
+# Drop or flag rows missing lat/long (only 4 rows missing)
+nyc_construction <- nyc_construction %>%
+  filter(!is.na(latitude) & !is.na(longitude))
+
+
+```
+
+```{r}
+# Step 6: Validate Data
+
+# Check award range
+summary(nyc_construction$award)
+
+# remove very small or extreme outliers 
+nyc_construction <- nyc_construction %>%
+  filter(award > 1000)  # Keep only projects with realistic budgets
+
+# Validate latitude and longitude range for NYC (approximate bounds)
+nyc_construction <- nyc_construction %>%
+  filter(
+    latitude >= 40.4 & latitude <= 41.0,
+    longitude >= -74.3 & longitude <= -73.5
+  )
+
+# Check again for valid values
+summary(nyc_construction[c("latitude", "longitude", "award")])
+
+```
+
+```{r}
+# Step 7: Save Cleaned Data
+write.csv(nyc_construction, "cleaned_nyc_construction.csv", row.names = FALSE)
+
+# Confirm save
+cat("cleaned dataset saved as 'cleaned_nyc_construction.csv'\n")
+
+```
+
+
