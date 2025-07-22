@@ -65,7 +65,7 @@ This section presents visual summaries of key insights from the NYC construction
 ### 1. Total Award Amount by Borough  
 This bar plot shows the **total dollar amount awarded** for active construction projects in each NYC borough.
 
-![Total Award Amount](images/total_award_by_borough.png)
+![Total Award Amount](project_award_amount.png)
 
 ---
 
