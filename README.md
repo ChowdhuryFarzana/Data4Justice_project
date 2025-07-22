@@ -58,46 +58,28 @@ Module 5:
 - Some boroughs (like Manhattan) may receive **larger average awards** despite fewer projects.
 - Construction types vary, with **CIP** being the most common across all boroughs.
 
-## 📊 Visualizations
+## Visualizations
 
 This section presents visual summaries of key insights from the NYC construction project data. The plots below help visualize disparities in funding, project distribution, and award size across boroughs.
 
 ### 1. Total Award Amount by Borough  
-This bar plot shows the **total dollar amount awarded** for active construction projects in each NYC borough.
-
-![Total Award Amount](project_award_amount.png)
+<img src="total_award_amount.png" alt="Total Award Amount" width="500"/>
 
 ---
 
-### 2. Average Award Amount by Borough  
-This chart highlights the **average project award** per borough. Some boroughs with fewer projects still receive disproportionately high average funding.
-
-![Average Award Amount](images/average_award_by_borough.png)
-
----
-
-### 3. Total Number of Projects by Borough  
-This plot displays the **total count of construction projects** currently active in each borough.
-
-![Project Count](images/total_projects_by_borough.png)
+### 2. Total Number of Projects by Borough  
+<img src="total_num_projects.png" alt="Total Projects by Borough" width="500"/>
 
 ---
 
 ### 4. Award Distribution Histogram  
-This histogram visualizes the distribution of award amounts across all projects. It reveals how many small vs. large-scale projects are present in the dataset.
-
-![Award Distribution](images/award_distribution_histogram.png)
+<img src="total_num_projects.png" alt="Award Distribution" width="500"/>
 
 ---
 
-### 5. Top 10 Most Expensive Projects  
-A snapshot of the ten most expensive construction projects currently underway in NYC, showing where major capital investments are being directed.
+### 5. constraction location 
+<img src="project_construction_location.png" alt="Top 10 Expensive Projects" width="500"/>
 
-![Top Projects](images/top_10_expensive_projects.png)
-
----
-
-*To regenerate these plots, see the R Markdown notebook in this repository.*
 
 
 
