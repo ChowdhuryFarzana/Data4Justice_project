@@ -18,7 +18,7 @@ library(janitor)
 
 ---
 
-## 🌐 Load Dataset from NYC Open Data
+## Load Dataset from NYC Open Data
 
 ```{r load-data}
 url <- "https://data.cityofnewyork.us/resource/8586-3zfm.json"
