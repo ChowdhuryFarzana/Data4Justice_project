@@ -80,10 +80,27 @@ This section presents visual summaries of key insights from the NYC construction
 ### 5. constraction location 
 <img src="project_construction_location.png" alt="Top 10 Expensive Projects" width="500"/>
 
+6. Median Household Income by Census Tract (ACS 2020)
+<img src="images/final_acs_map.png" alt="Median Household Income by Census Tract" width="500"/>
+NLP Analysis of Project Descriptions
 
+Goal: Identify the most frequently mentioned types of work in Capacity and CIP projects.
 
+Pipeline: Tokenize → lowercase → remove stop words/punctuation → lemmatize → reassemble → build bigrams and trigrams → count frequencies.
 
+Key Findings:
 
-## License
+Unigrams (CIP): ipdvs, exterior, installation, masonry, roof, upgrade, parapet, replacement, system.
 
-This dataset originates from [NYC Open Data](https://opendata.cityofnewyork.us/) and is provided under their open data license.
+Bigrams (CIP): exterior masonry, ipdvs installation, flood elimination, roof parapet, ipdvs camera, path travel, camera installation, climate control.
+
+Trigrams (CIP): parapet exterior masonry, ipdvs camera installation, roof parapet exterior, planyc climate control, planyc boiler conversion, low voltage electrical.
+
+7. Most Frequent Unigrams in Project Descriptions
+<img src="images/nlp_unigrams_bar.png" alt="Unigram Frequencies" width="500"/>
+8. Most Frequent Bigrams in Project Descriptions
+<img src="images/nlp_bigrams_bar.png" alt="Bigram Frequencies" width="500"/>
+9. Most Frequent Trigrams in Project Descriptions
+<img src="images/nlp_trigrams_bar.png" alt="Trigram Frequencies" width="500"/>
+10. Word Cloud of Most Frequent Terms
+<img src="images/nlp_wordcloud_unigrams.png" alt="Word Cloud of Unigrams" width="500"/>
