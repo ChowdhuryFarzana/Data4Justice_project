@@ -1,1 +1,609 @@
+---
+title: "NYC Construction Data Cleaning & Validation"
+output: html_document
+author: "Farzana Chowdhury"
+date: "2025-07-07"
+---
+
+```{r load-libraries, message=FALSE, warning=FALSE}
+## Load Required Libraries
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)
+library(janitor)
+library(tidycensus)
+```
+
+---
+
+## 🌐 Load Dataset from NYC Open Data
+
+```{r load-data}
+url <- "https://data.cityofnewyork.us/resource/8586-3zfm.json"
+nyc_construction <- fromJSON(url)
+nyc_construction <- as.data.frame(nyc_construction)
+
+# View structure
+str(nyc_construction)
+
+```
+
+
+```{r}
+# View structure and types
+str(nyc_construction)
+
+# Compact structure view
+glimpse(nyc_construction)
+
+```
+
+
+
+```{r}
+# Plot job counts by borough if 'borough' column exists
+if ("borough" %in% colnames(nyc_construction)) {
+  ggplot(nyc_construction, aes(x = borough)) +
+    geom_bar() +
+    theme_minimal() +
+    labs(
+      title = "Construction Job Counts by Borough",
+      x = "Borough",
+      y = "Count"
+    )
+}
+
+```
+
+
+```{r fix-data-types}
+#  Convert numerical and date columns properly
+# Step 1: Fix Data Types
+nyc_construction <- nyc_construction %>%
+  mutate(
+    award = as.numeric(award),
+    latitude = as.numeric(latitude),
+    longitude = as.numeric(longitude)
+  )
+```
+
+
+```{r}
+# Step 2: Remove Duplicates
+nyc_construction <- nyc_construction %>%
+  distinct()
+
+# Step 3: Clean Messy Text (excluding 'projdesc')
+char_cols <- names(nyc_construction)[sapply(nyc_construction, is.character)]
+cols_to_clean <- setdiff(char_cols, "projdesc")
+
+nyc_construction <- nyc_construction %>%
+  mutate(across(
+    all_of(cols_to_clean),
+    str_trim
+  )) %>%
+  mutate(across(
+    c(city, borough),
+    str_to_title
+  ))
+
+
+```
+
+```{r}
+# View column names after cleaning
+nyc_construction_cleaned <- nyc_construction %>%
+  clean_names()
+
+colnames(nyc_construction_cleaned)
+
+```
+
+
+```{r}
+# Step 4: Rename Confusing Variable Names
+nyc_construction <- nyc_construction %>%
+  rename(
+    borough_code = boro,
+    geographic_district = geo_dist,
+    project_description = projdesc,
+    construction_type = consttype,
+    building_id = buildingid,
+    building_identification_number = bin,
+    borough_block_lot = bbl,
+    neighborhood_tabulation_area = nta,
+    coordinates = location_1,
+    planning_area_region = region1,
+    school_district_region = region2,
+    community_region_yeji = computed_region_yeji_bk3q,
+    community_region_92fq = computed_region_92fq_4b7q,
+    community_region_sbqj = computed_region_sbqj_enih
+  )
+
+```
+
+
+```{r}
+# Step 5: Handle Missing Data
+# View how much is missing
+colSums(is.na(nyc_construction))
+
+# Replace missing ZIPs and boroughs with "Unknown"
+nyc_construction <- nyc_construction %>%
+  mutate(
+    zip_code = ifelse(is.na(zip_code), "Unknown", zip_code),
+    borough = ifelse(is.na(borough), "Unknown", borough)
+  )
+
+
+```
+
+
+```{r}
+
+# Drop rows with missing critical IDs (BIN, BBL)
+nyc_construction <- nyc_construction %>%
+  filter(
+    !is.na(building_identification_number),
+    !is.na(borough_block_lot)
+  )
+
+# Drop or flag rows missing lat/long (only 4 rows missing)
+nyc_construction <- nyc_construction %>%
+  filter(!is.na(latitude) & !is.na(longitude))
+
+
+```
+
+```{r}
+# Step 6: Validate Data
+
+# Check award range
+summary(nyc_construction$award)
+
+# remove very small or extreme outliers 
+nyc_construction <- nyc_construction %>%
+  filter(award > 1000)  # Keep only projects with realistic budgets
+
+# Validate latitude and longitude range for NYC (approximate bounds)
+nyc_construction <- nyc_construction %>%
+  filter(
+    latitude >= 40.4 & latitude <= 41.0,
+    longitude >= -74.3 & longitude <= -73.5
+  )
+
+# Check again for valid values
+summary(nyc_construction[c("latitude", "longitude", "award")])
+
+```
+
+```{r}
+# Step 7: Save Cleaned Data
+write.csv(nyc_construction, "cleaned_nyc_construction.csv", row.names = FALSE)
+
+# Confirm save
+cat("cleaned dataset saved as 'cleaned_nyc_construction.csv'\n")
+
+```
+
+```{r}
+# Ensure the award and borough columns are properly formatted
+award_summary <- nyc_construction_cleaned %>%
+  filter(!is.na(award), !is.na(borough)) %>%
+  group_by(borough) %>%
+  summarise(
+    average_award_amount = mean(award, na.rm = TRUE),
+    total_award_amount = sum(award, na.rm = TRUE),
+    total_projects = n()
+  ) %>%
+  arrange(desc(total_award_amount))
+
+# Display the summary table
+award_summary
+
+```
+```{r}
+# Bar plot of total award amount by borough
+ggplot(award_summary, aes(x = reorder(borough, -total_award_amount), y = total_award_amount)) +
+  geom_col(fill = "steelblue") +
+  theme_minimal() +
+  labs(
+    title = "Total Award Amount by Borough",
+    x = "Borough",
+    y = "Total Award Amount ($)"
+  ) +
+  scale_y_continuous(labels = scales::comma)
+
+```
+```{r}
+# Bar plot of average award amount by borough
+ggplot(award_summary, aes(x = reorder(borough, -average_award_amount), y = average_award_amount)) +
+  geom_col(fill = "darkgreen") +
+  theme_minimal() +
+  labs(
+    title = "Average Award Amount by Borough",
+    x = "Borough",
+    y = "Average Award Amount ($)"
+  ) +
+  scale_y_continuous(labels = scales::comma)
+
+```
+```{r}
+# Bar plot of total number of projects by borough
+ggplot(award_summary, aes(x = reorder(borough, -total_projects), y = total_projects)) +
+  geom_col(fill = "purple") +
+  theme_minimal() +
+  labs(
+    title = "Total Number of Projects by Borough",
+    x = "Borough",
+    y = "Number of Projects"
+  )
+
+```
+
+```{r}
+nyc_construction_cleaned <- nyc_construction_cleaned %>%
+  rename(
+    construction_type = consttype
+  )
+```
+
+```{r}
+# top most expensive project
+top_projects <- nyc_construction_cleaned %>%
+  filter(!is.na(award)) %>%
+  arrange(desc(award)) %>%
+  select(name, borough, award, construction_type, building_address) %>%
+  head(10)
+
+top_projects
+
+```
+
+```{r}
+ggplot(nyc_construction_cleaned, aes(x = award)) +
+  geom_histogram(bins = 30, fill = "coral", color = "white") +
+  theme_minimal() +
+  labs(
+    title = "Distribution of Project Award Amounts",
+    x = "Award Amount ($)",
+    y = "Frequency"
+  ) +
+  scale_x_continuous(labels = scales::comma)
+
+```
+
+
+```{r}
+#award total by construction site
+award_by_type <- nyc_construction_cleaned %>%
+  filter(!is.na(construction_type), !is.na(award)) %>%
+  group_by(construction_type) %>%
+  summarise(
+    total_award = sum(award, na.rm = TRUE),
+    average_award = mean(award, na.rm = TRUE),
+    number_of_projects = n()
+  ) %>%
+  arrange(desc(total_award))
+
+award_by_type
+
+```
+```{r}
+library(maps)
+library(ggmap)
+
+# Filter for valid coordinates
+geo_projects <- nyc_construction_cleaned %>%
+  filter(!is.na(latitude), !is.na(longitude))
+
+ggplot(geo_projects, aes(x = longitude, y = latitude)) +
+  borders("state", region = "new york", fill = "gray95", colour = "gray50") +
+  geom_point(alpha = 0.6, color = "darkred", size = 2) +
+  coord_fixed(1.3) +
+  theme_minimal() +
+  labs(title = "NYC Construction Projects by Location")
+
+```
+
+```{r}
+# Which Borough Gets the Most CIP Projects?
+cip_distribution <- nyc_construction_cleaned %>%
+  filter(construction_type == "CIP") %>%
+  group_by(borough) %>%
+  summarise(cip_projects = n()) %>%
+  arrange(desc(cip_projects))
+
+cip_distribution
+
+```
+
+
+```{r define-variables}
+# Variables for Race, Gender, and Median Household Income (ACS 5-Year 2020)
+acs_vars <- c(
+  total_pop   = "B01001_001",  # Total population
+  male_pop    = "B01001_002",  # Male population
+  female_pop  = "B01001_026",  # Female population
+  white_alone = "B02001_002",  # White alone
+  black_alone = "B02001_003",  # Black or African American alone
+  asian_alone = "B02001_005",  # Asian alone
+  med_house_inc = "B19013_001" # Median household income
+)
+
+
+# NYC County FIPS codes (Bronx, Kings, New York, Queens, Richmond)
+nyc_counties <- c("005","047","061","081","085")
+
+```
+
+
+```{r pull-acs-data}
+# Pull ACS 2020 data for all NYC counties at Census tract level
+acs_data <- get_acs(
+  geography = "tract",
+  variables = acs_vars,
+  state = "36",           # NY state FIPS
+  county = nyc_counties,  # NYC counties
+  year = 2020,
+  survey = "acs5",
+  geometry = FALSE,       # We don't need shapes here
+  output = "wide"         # Keep variables in wide format
+)
+# Clean column names
+acs_data <- acs_data %>%
+  clean_names()
+
+# Inspect
+head(acs_data)
+
+```
+
+
+```{r prepare-census-tract-id}
+# Create a single Census Tract identifier in 2020 format
+# GEOID from tidycensus is already state+county+tract combined (11 digits)
+acs_data <- acs_data %>%
+  rename(census_tract_2020 = geoid)
+
+```
+
+
+```{r prepare-nyc-tract-id}
+# Map boroughs to county FIPS
+borough_to_county <- c(
+  "Bronx"      = "005",
+  "Brooklyn"   = "047",
+  "Manhattan"  = "061",
+  "Queens"     = "081",
+  "Staten Is"  = "085"
+)
+
+# Create a matching 11-digit Census GEOID
+nyc_construction <- nyc_construction %>%
+  mutate(
+    # Clean borough names to match our lookup table
+    borough_clean = str_to_title(borough),
+    
+    # Get county FIPS from borough
+    county_fips = borough_to_county[borough_clean],
+    
+    # Zero-pad the tract code to 6 digits
+    tract_code = str_pad(census_tract, width = 6, side = "right", pad = "0"),
+    
+    # Build the full GEOID: state(2) + county(3) + tract(6)
+    census_tract_2020 = ifelse(
+      !is.na(county_fips) & !is.na(census_tract),
+      paste0("36", county_fips, tract_code),
+      NA
+    )
+  )
+
+
+```
+
+
+```{r merge-with-acs}
+nyc_merged <- nyc_construction %>%
+  left_join(acs_data, by = "census_tract_2020")
+
+glimpse(nyc_merged)
+
+```
+
+
+
+```{r}
+library(sf)
+```
+
+```{r}
+# Pull geometry for NYC tracts 
+nyc_counties <- c("005","047","061","081","085")  # Bronx, Kings, New York, Queens, Richmond
+
+tract_shapes <- tidycensus::get_acs(
+  geography = "tract",
+  variables = "B01001_001",  # total population just to fetch geometry
+  state = "36",
+  county = nyc_counties,
+  year = 2020,
+  geometry = TRUE
+) |>
+  dplyr::select(GEOID, geometry)
+
+# Join with merged dataset
+nyc_map <- tract_shapes |>
+  left_join(nyc_merged, by = c("GEOID" = "census_tract_2020"))
+
+# Median household income by tract
+ggplot(nyc_map) +
+  geom_sf(aes(fill = med_house_inc_e), color = NA) +
+  scale_fill_viridis_c(
+    option = "plasma",
+    labels = scales::comma,
+    name = "Median HH Income"
+  ) +
+  theme_minimal(base_size = 12) +
+  labs(
+    title = "Median Household Income by Census Tract in NYC",
+    subtitle = "ACS 2020 5-year estimates",
+    caption = "Source: U.S. Census Bureau, ACS 2020"
+  )
+```
+
+
+```{r}
+# Packages
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(tidytext)
+library(textstem)   # for lemmatization
+library(ggplot2)
+library(janitor)
+library(tm)         # for DTM casting
+library(wordcloud)
+
+```
+
+```{r}
+# 0.1) Standardize column names and ensure description column exists
+nyc_construction <- nyc_construction %>% clean_names()
+
+# Your data uses `projdesc`; make a friendly alias
+if (!"project_description" %in% names(nyc_construction)) {
+  if ("projdesc" %in% names(nyc_construction)) {
+    nyc_construction <- nyc_construction %>% mutate(project_description = projdesc)
+  } else {
+    stop("No project description column found. Expected `projdesc` or `project_description`.")
+  }
+}
+```
+
+```{r}
+# Map project type (CIP vs Capacity). In your data, 'consttype' uses 'CIP' and 'CAP'
+nyc_construction <- nyc_construction %>%
+  mutate(project_type = case_when(
+    consttype == "CIP" ~ "CIP",
+    consttype == "CAP" ~ "Capacity",
+    TRUE ~ "Other"
+  ))
+
+```
+
+```{r}
+# Focus on Capacity & CIP only
+proj_df <- nyc_construction %>%
+  filter(project_type %in% c("Capacity", "CIP")) %>%
+  mutate(project_id = row_number()) %>%
+  select(project_id, project_type, project_description) %>%
+  filter(!is.na(project_description), nchar(trimws(project_description)) > 0)
+```
+
+
+```{r}
+# CLEAN THE TEXT
+data("stop_words")
+domain_stops <- tibble(word = c("ps", "is", "hs", "school", "queens", "bronx", "manhattan", "brooklyn", "staten", "island")) # optional domain stops
+
+tokens_clean <- proj_df %>%
+  unnest_tokens(output = token, input = project_description, token = "words") %>%
+  filter(!str_detect(token, "^[0-9]+$"), nchar(token) > 1) %>%
+  anti_join(stop_words, by = c("token" = "word")) %>%
+  anti_join(domain_stops, by = c("token" = "word")) %>%  # optional: drop proper nouns / locations
+  mutate(token_lemma = lemmatize_words(token)) %>%
+  filter(!is.na(token_lemma), token_lemma != "")
+
+```
+
+```{r}
+# REASSEMBLE & CREATE N-GRAMS (bigrams and trigrams)
+clean_text_by_doc <- tokens_clean %>%
+  group_by(project_id, project_type) %>%
+  summarise(clean_text = paste(token_lemma, collapse = " "), .groups = "drop")
+
+bigrams <- clean_text_by_doc %>%
+  unnest_tokens(ngram, clean_text, token = "ngrams", n = 2)
+
+trigrams <- clean_text_by_doc %>%
+  unnest_tokens(ngram, clean_text, token = "ngrams", n = 3)
+```
+
+
+```{r}
+# COUNT FREQUENCIES (unigrams, bigrams, trigrams)
+top_unigrams <- tokens_clean %>%
+  count(project_type, token_lemma, sort = TRUE, name = "n") %>%
+  group_by(project_type) %>% slice_max(n, n = 20) %>% ungroup()
+
+top_bigrams <- bigrams %>%
+  count(project_type, ngram, sort = TRUE, name = "n") %>%
+  group_by(project_type) %>% slice_max(n, n = 20) %>% ungroup()
+
+top_trigrams <- trigrams %>%
+  count(project_type, ngram, sort = TRUE, name = "n") %>%
+  group_by(project_type) %>% slice_max(n, n = 20) %>% ungroup()
+
+print(head(top_unigrams, 10))
+print(head(top_bigrams, 10))
+print(head(top_trigrams, 10))
+```
+```{r}
+# VISUALIZE — BAR CHARTS
+# Unigrams
+ggplot(top_unigrams, aes(x = reorder_within(token_lemma, n, project_type), y = n, fill = project_type)) +
+  geom_col(show.legend = FALSE) +
+  scale_x_reordered() +
+  coord_flip() +
+  facet_wrap(~ project_type, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "Most Frequent Unigrams in Project Descriptions",
+       x = NULL, y = "Count")
+```
+```{r}
+# Bigrams
+ggplot(top_bigrams, aes(x = reorder_within(ngram, n, project_type), y = n, fill = project_type)) +
+  geom_col(show.legend = FALSE) +
+  scale_x_reordered() +
+  coord_flip() +
+  facet_wrap(~ project_type, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "Most Frequent Bigrams in Project Descriptions",
+       x = NULL, y = "Count")
+```
+```{r}
+# Trigrams
+ggplot(top_trigrams, aes(x = reorder_within(ngram, n, project_type), y = n, fill = project_type)) +
+  geom_col(show.legend = FALSE) +
+  scale_x_reordered() +
+  coord_flip() +
+  facet_wrap(~ project_type, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "Most Frequent Trigrams in Project Descriptions",
+       x = NULL, y = "Count")
+```
+```{r}
+# WORD CLOUD (OVERALL, UNIGRAMS)
+set.seed(42)
+wc_unigrams <- tokens_clean %>%
+  count(token_lemma, sort = TRUE, name = "freq")
+
+wordcloud(words = wc_unigrams$token_lemma,
+          freq  = wc_unigrams$freq,
+          max.words = 100,
+          random.order = FALSE,
+          rot.per = 0.15,
+          scale = c(3.2, 0.8))
+
+# SINGLE-DOCUMENT DTM (as in prompt)
+# Treat all tokens as one document for n-gram DTM example (here using bigrams)
+dtm <- bigrams %>%
+  mutate(doc_id = "doc_1", ngram = ngram) %>%
+  count(doc_id, ngram, name = "n") %>%
+  tidytext::cast_dtm(document = doc_id, term = ngram, value = n)
+
+dtm  # prints a summary of the DTM
+```
 
