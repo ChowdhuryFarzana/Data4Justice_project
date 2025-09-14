@@ -84,7 +84,7 @@ This section presents visual summaries of key insights from the NYC construction
 
 ### Goal: Identify the most frequently mentioned types of work in Capacity and CIP projects.
 
-Pipeline: Tokenize → lowercase → remove stop words/punctuation → lemmatize → reassemble → build bigrams and trigrams → count frequencies.
+Pipeline: Tokenize → lowercase → remove stop words/punctuation → lemmatize → reassemble → build bigrams → count frequencies.
 
 Key Findings:
 
