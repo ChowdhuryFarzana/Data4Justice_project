@@ -95,8 +95,8 @@ Unigrams (CIP): ipdvs, exterior, installation, masonry, roof, upgrade, parapet, 
 Bigrams (CIP): exterior masonry, ipdvs installation, flood elimination, roof parapet, ipdvs camera, path travel, camera installation, climate control.
 
 7. Most Frequent Unigrams in Project Descriptions
-<img src="nost_frequent_unigram.png" alt="Unigram Frequencies" width="500"/>
+<img src="most_frequent_unigram.png" alt="Unigram Frequencies" width="500"/>
 8. Most Frequent Bigrams in Project Descriptions
-<img src="Most_frequent_brigrams.png" alt="Bigram Frequencies" width="500"/>
+<img src="Most_frequent_bigrams.png" alt="Bigram Frequencies" width="500"/>
 9. Average Award Amount  
 <img src="average_award_amount.png" alt="Average award amount" width="500"/>
