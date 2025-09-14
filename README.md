@@ -98,3 +98,9 @@ Bigrams (CIP): exterior masonry, ipdvs installation, flood elimination, roof par
 <img src="Most_frequent_bigrams.png" alt="Bigram Frequencies" width="500"/>
 8. Average Award Amount  
 <img src="average_award_amount.png" alt="Average award amount" width="500"/>
+
+## Key findings  
+  - “Unknown” borough projects significantly skew average award amounts.  
+  - Frequent activities include masonry, roof repairs, flood elimination, and security system installations.  
+  - Applied **NLP (unigram & bigram analysis)** on project descriptions to uncover recurring themes and priorities, showing how text mining provides valuable context beyond structured data.
+
