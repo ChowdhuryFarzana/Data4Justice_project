@@ -80,8 +80,6 @@ This section presents visual summaries of key insights from the NYC construction
 ### 5. constraction location 
 <img src="project_construction_location.png" alt="Top 10 Expensive Projects" width="500"/>
 
-6. Median Household Income by Census Tract (ACS 2020)
-<img src="images/final_acs_map.png" alt="Median Household Income by Census Tract" width="500"/>
 NLP Analysis of Project Descriptions
 
 Goal: Identify the most frequently mentioned types of work in Capacity and CIP projects.
@@ -94,9 +92,9 @@ Unigrams (CIP): ipdvs, exterior, installation, masonry, roof, upgrade, parapet, 
 
 Bigrams (CIP): exterior masonry, ipdvs installation, flood elimination, roof parapet, ipdvs camera, path travel, camera installation, climate control.
 
-7. Most Frequent Unigrams in Project Descriptions
+6. Most Frequent Unigrams in Project Descriptions
 <img src="most_frequent_unigram.png" alt="Unigram Frequencies" width="500"/>
-8. Most Frequent Bigrams in Project Descriptions
+7. Most Frequent Bigrams in Project Descriptions
 <img src="Most_frequent_bigrams.png" alt="Bigram Frequencies" width="500"/>
-9. Average Award Amount  
+8. Average Award Amount  
 <img src="average_award_amount.png" alt="Average award amount" width="500"/>
