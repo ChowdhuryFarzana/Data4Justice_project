@@ -80,9 +80,9 @@ This section presents visual summaries of key insights from the NYC construction
 ### 5. constraction location 
 <img src="project_construction_location.png" alt="Top 10 Expensive Projects" width="500"/>
 
-NLP Analysis of Project Descriptions
+## NLP Analysis of Project
 
-Goal: Identify the most frequently mentioned types of work in Capacity and CIP projects.
+### Goal: Identify the most frequently mentioned types of work in Capacity and CIP projects.
 
 Pipeline: Tokenize → lowercase → remove stop words/punctuation → lemmatize → reassemble → build bigrams and trigrams → count frequencies.
 
