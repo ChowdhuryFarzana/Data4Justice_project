@@ -1,5 +1,5 @@
 # Data4Justice_project
-This project is part of Data4Justice course.
+This project is part of Data4Justice Accelarator Program
 
 # NYC Construction Projects — Data Cleaning & Validation
 
